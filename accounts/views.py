@@ -75,7 +75,11 @@ ADMIN_PASSWORD = 'admin1234'  # 실제 서비스에서는 환경변수로 관리
 
 
 def manage_page(request):
-    # 비밀번호 로그인 처리
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return redirect('login')
+
+    # 관리자 비밀번호 처리
     if request.method == 'POST':
         pw = request.POST.get('password', '')
         if pw == ADMIN_PASSWORD:
@@ -83,15 +87,13 @@ def manage_page(request):
         else:
             messages.error(request, '비밀번호가 틀렸습니다.')
 
-    if not request.session.get('is_admin'):
-        return render(request, 'accounts/manage_login.html')
-
-    users = database.list_users()
-    # 각 유저의 샘플 수 계산
+    # 관리자 인증된 경우에만 유저 목록 조회
     user_info = {}
-    for uid, name in users.items():
-        count = len([f for f in FACES_DIR.glob(f"{uid}_*.png")]) if FACES_DIR.exists() else 0
-        user_info[uid] = {'name': name, 'samples': count}
+    if request.session.get('is_admin'):
+        users = database.list_users()
+        for uid, name in users.items():
+            count = len([f for f in FACES_DIR.glob(f"{uid}_*.png")]) if FACES_DIR.exists() else 0
+            user_info[uid] = {'name': name, 'samples': count}
 
     return render(request, 'accounts/manage.html', {'user_info': user_info})
 

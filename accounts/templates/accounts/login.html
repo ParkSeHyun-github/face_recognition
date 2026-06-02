@@ -1,9 +1,14 @@
 {% extends "accounts/base.html" %}
-{% block title %}로그인 - 얼굴 인식{% endblock %}
+{% block title %}로그인 — PoseFit{% endblock %}
 
 {% block body %}
 <div class="card">
-  <h1>얼굴 인식 로그인</h1>
+  <div class="card-logo">
+    <a href="/login/" style="text-decoration:none;">
+      <span class="fit">Pose</span><span class="face">Fit</span>
+    </a>
+  </div>
+  <h1>로그인</h1>
   <p class="subtitle">카메라를 바라보면 자동으로 인식됩니다.</p>
 
   <div class="video-wrap">

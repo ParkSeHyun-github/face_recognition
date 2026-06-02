@@ -1,0 +1,18 @@
+{
+  "squat": {
+    "knee_angle": {"min": 70, "max": 100},
+    "hip_angle": {"min": 60, "max": 90}
+  },
+  "lunge": {
+    "front_knee_angle": {"min": 80, "max": 100},
+    "back_knee_angle": {"min": 80, "max": 100}
+  },
+  "plank": {
+    "hip_angle": {"min": 160, "max": 180},
+    "elbow_angle": {"min": 85, "max": 95}
+  },
+  "overhead_press": {
+    "elbow_angle": {"min": 160, "max": 180},
+    "shoulder_angle": {"min": 160, "max": 180}
+  }
+}

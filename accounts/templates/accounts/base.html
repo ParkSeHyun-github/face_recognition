@@ -3,14 +3,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}얼굴 인식 로그인{% endblock %}</title>
+  <title>{% block title %}PoseFit{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --blue: #4285F4;
+      --blue-dark: #3367D6;
+      --red: #EA4335;
+      --green: #34A853;
+      --yellow: #FBBC04;
+      --text: #202124;
+      --text-secondary: #5F6368;
+      --border: #DADCE0;
+      --bg: #F8F9FA;
+      --white: #FFFFFF;
+      --shadow: 0 1px 3px rgba(60,64,67,.15), 0 4px 8px rgba(60,64,67,.10);
+      --shadow-hover: 0 2px 6px rgba(60,64,67,.2), 0 6px 12px rgba(60,64,67,.15);
+    }
+    [data-theme="dark"] {
+      --text: #E8EAED;
+      --text-secondary: #9AA0A6;
+      --border: #3C4043;
+      --bg: #202124;
+      --white: #292A2D;
+      --shadow: 0 1px 3px rgba(0,0,0,.4), 0 4px 8px rgba(0,0,0,.3);
+      --shadow-hover: 0 2px 6px rgba(0,0,0,.5), 0 6px 12px rgba(0,0,0,.4);
+    }
+
     body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: #0f0f1a;
-      color: #e0e0e0;
+      font-family: 'Roboto', 'Google Sans', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -19,118 +45,211 @@
     }
 
     .card {
-      background: #1a1a2e;
-      border: 1px solid #2a2a4a;
-      border-radius: 16px;
-      padding: 36px 40px;
-      width: 100%;
-      max-width: 520px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-    }
-
-    h1 { font-size: 1.6rem; margin-bottom: 6px; color: #fff; }
-    .subtitle { color: #888; font-size: 0.9rem; margin-bottom: 28px; }
-
-    input[type="text"] {
-      width: 100%;
-      padding: 12px 16px;
+      background: var(--white);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      border: 1px solid #3a3a5a;
-      background: #12122a;
-      color: #fff;
-      font-size: 1rem;
-      margin-bottom: 16px;
+      padding: 48px 40px 36px;
+      width: 100%;
+      max-width: 450px;
+      box-shadow: var(--shadow);
     }
-    input[type="text"]:focus { outline: none; border-color: #6c63ff; }
+
+    .card-logo {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .card-logo span {
+      font-family: 'Google Sans', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    .card-logo .fit { color: var(--blue); }
+    .card-logo .face { color: var(--text); }
+
+    h1 {
+      font-family: 'Google Sans', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 400;
+      color: var(--text);
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 13px 15px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: 'Roboto', sans-serif;
+      margin-bottom: 16px;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 2px rgba(66,133,244,.15);
+    }
 
     .btn {
       display: inline-block;
-      padding: 12px 24px;
-      border-radius: 8px;
+      padding: 10px 24px;
+      border-radius: 4px;
       border: none;
       cursor: pointer;
-      font-size: 1rem;
-      font-weight: 600;
-      transition: opacity .2s;
+      font-size: 0.9rem;
+      font-weight: 500;
+      font-family: 'Google Sans', sans-serif;
+      transition: background .15s, box-shadow .15s;
       text-decoration: none;
+      letter-spacing: .01em;
     }
-    .btn:hover { opacity: .85; }
-    .btn-primary { background: #6c63ff; color: #fff; width: 100%; text-align: center; }
-    .btn-secondary { background: #2a2a4a; color: #ccc; }
-    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--blue);
+      color: #fff;
+      width: 100%;
+      text-align: center;
+      padding: 12px;
+    }
+    .btn-primary:hover { background: var(--blue-dark); box-shadow: 0 1px 4px rgba(66,133,244,.4); }
+    .btn-secondary {
+      background: transparent;
+      color: var(--blue);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: #F6FAFE; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
 
     .video-wrap {
       position: relative;
-      border-radius: 12px;
+      border-radius: 8px;
       overflow: hidden;
       background: #000;
       margin-bottom: 20px;
     }
-    video, canvas.overlay {
-      display: block;
-      width: 100%;
-    }
-    canvas.overlay {
-      position: absolute;
-      top: 0; left: 0;
-      pointer-events: none;
-    }
+    video, canvas.overlay { display: block; width: 100%; }
+    canvas.overlay { position: absolute; top: 0; left: 0; pointer-events: none; }
 
     .progress-bar-wrap {
-      background: #2a2a4a;
-      border-radius: 8px;
-      height: 10px;
-      margin-bottom: 12px;
+      background: #E8EAED;
+      border-radius: 4px;
+      height: 4px;
+      margin-bottom: 14px;
       overflow: hidden;
     }
     .progress-bar {
       height: 100%;
-      background: #6c63ff;
-      border-radius: 8px;
+      background: var(--blue);
+      border-radius: 4px;
       transition: width .3s;
     }
 
     .status {
       text-align: center;
-      min-height: 24px;
-      font-size: 0.95rem;
-      margin-bottom: 16px;
+      min-height: 22px;
+      font-size: 0.88rem;
+      margin-bottom: 14px;
+      color: var(--text-secondary);
     }
-    .status.ok { color: #4caf50; }
-    .status.warn { color: #ff9800; }
-    .status.err { color: #f44336; }
+    .status.ok   { color: var(--green); }
+    .status.warn { color: var(--yellow); }
+    .status.err  { color: var(--red); }
 
-    .nav-links { margin-top: 20px; text-align: center; font-size: 0.9rem; color: #888; }
-    .nav-links a { color: #6c63ff; text-decoration: none; }
+    .nav-links {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    .nav-links a { color: var(--blue); text-decoration: none; font-weight: 500; }
     .nav-links a:hover { text-decoration: underline; }
 
-    .success-box {
-      text-align: center;
-      padding: 32px;
-    }
-    .success-box .icon { font-size: 3rem; margin-bottom: 12px; }
-    .success-box h2 { font-size: 1.4rem; color: #4caf50; margin-bottom: 8px; }
+    .success-box { text-align: center; padding: 24px 0; }
+    .success-box .icon { font-size: 2.8rem; margin-bottom: 12px; }
+    .success-box h2 { font-family: 'Google Sans', sans-serif; font-size: 1.3rem; font-weight: 400; color: var(--green); margin-bottom: 6px; }
 
-    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-    th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #2a2a4a; font-size: 0.9rem; }
-    th { color: #888; font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    th { padding: 10px 14px; text-align: left; font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
+    td { padding: 12px 14px; text-align: left; border-bottom: 1px solid #F1F3F4; font-size: 0.9rem; color: var(--text); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #F8F9FA; }
 
     .top-bar {
       position: fixed; top: 0; left: 0; right: 0;
-      background: #1a1a2e;
-      border-bottom: 1px solid #2a2a4a;
-      padding: 14px 32px;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 64px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       z-index: 100;
     }
-    .top-bar .brand { font-weight: 700; color: #6c63ff; }
+    .top-bar .brand {
+      font-family: 'Google Sans', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+    .top-bar .brand .fit { color: var(--blue); }
+    .top-bar .brand .face { color: var(--text); }
 
-    .page { padding-top: 70px; width: 100%; display: flex; justify-content: center; }
+    .page { padding-top: 64px; width: 100%; display: flex; justify-content: center; padding-bottom: 40px; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 24px 0;
+    }
+
+    .chip {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      background: #E8F0FE;
+      color: var(--blue);
+    }
+    .theme-toggle {
+      background: none; border: 1px solid var(--border);
+      border-radius: 20px; padding: 5px 12px;
+      cursor: pointer; font-size: 0.85rem; color: var(--text-secondary);
+      display: flex; align-items: center; gap: 6px;
+      transition: background .15s;
+    }
+    .theme-toggle:hover { background: var(--bg); }
   </style>
 </head>
 <body>
   {% block body %}{% endblock %}
+  <script>
+    (function() {
+      const saved = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', saved);
+    })();
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      document.querySelectorAll('.theme-toggle').forEach(btn => {
+        btn.innerHTML = next === 'dark' ? '☀️ 라이트' : '🌙 다크';
+      });
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      const theme = localStorage.getItem('theme') || 'light';
+      document.querySelectorAll('.theme-toggle').forEach(btn => {
+        btn.innerHTML = theme === 'dark' ? '☀️ 라이트' : '🌙 다크';
+      });
+    });
+  </script>
 </body>
 </html>

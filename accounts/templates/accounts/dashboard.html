@@ -1,46 +1,61 @@
 {% extends "accounts/base.html" %}
-{% block title %}대시보드{% endblock %}
+{% block title %}홈 — PoseFit{% endblock %}
 
 {% block body %}
 <div class="top-bar">
-  <span class="brand">👤 얼굴 인식 로그인</span>
-  <a href="{% url 'logout' %}" class="btn btn-secondary" style="padding:8px 18px;font-size:0.9rem;">로그아웃</a>
+  <span class="brand"><a href="/dashboard/" style="text-decoration:none;"><span class="fit">Pose</span><span class="face">Fit</span></a></span>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <span style="font-size:0.85rem;color:var(--text-secondary);">{{ username }}님</span>
+    <button class="theme-toggle" onclick="toggleTheme()">🌙 다크</button>
+    <a href="{% url 'logout' %}" class="btn btn-secondary" style="padding:7px 16px;font-size:0.85rem;">로그아웃</a>
+  </div>
 </div>
 
 <div class="page">
-  <div class="card" style="max-width:600px; margin-top:20px;">
-    <div class="success-box" style="padding:20px 0 28px;">
-      <div class="icon">✅</div>
-      <h2 style="color:#4caf50; margin-bottom:6px;">로그인 성공</h2>
-      <p style="color:#aaa;">환영합니다, <strong style="color:#fff;">{{ username }}</strong>님!</p>
+  <div style="width:100%;max-width:640px;padding:32px 16px;">
+
+    <!-- 환영 배너 -->
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:28px 32px;margin-bottom:16px;display:flex;align-items:center;gap:20px;">
+      <div style="width:48px;height:48px;border-radius:50%;background:#E8F0FE;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">👤</div>
+      <div>
+        <div style="font-family:'Google Sans',sans-serif;font-size:1.1rem;font-weight:500;color:var(--text);">안녕하세요, {{ username }}님!</div>
+        <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:2px;">얼굴 인식으로 로그인되었습니다.</div>
+      </div>
     </div>
 
-    <hr style="border-color:#2a2a4a; margin-bottom:24px;">
-
-    <h2 style="font-size:1rem; color:#888; margin-bottom:8px;">등록된 사용자 목록</h2>
-    {% if users %}
-    <table>
-      <thead>
-        <tr><th>ID</th><th>이름</th></tr>
-      </thead>
-      <tbody>
-        {% for uid, name in users.items %}
-        <tr>
-          <td style="color:#666;">{{ uid }}</td>
-          <td>{{ name }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <p style="color:#555; font-size:0.9rem;">등록된 사용자가 없습니다.</p>
-    {% endif %}
-
-    <div style="margin-top:24px; display:flex; gap:12px; flex-wrap:wrap;">
-      <a href="{% url 'register' %}" class="btn btn-primary" style="flex:1; text-align:center;">새 얼굴 등록</a>
-      <a href="{% url 'manage' %}" class="btn btn-secondary" style="flex:1; text-align:center;">관리자 페이지</a>
-      <a href="{% url 'logout' %}" class="btn btn-secondary" style="flex:1; text-align:center;">로그아웃</a>
+    <!-- 메뉴 카드 그리드 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;">
+      <a href="{% url 'workout' %}" style="text-decoration:none;">
+        <div style="background:var(--blue);border-radius:8px;padding:24px 20px;color:#fff;transition:box-shadow .15s;" onmouseover="this.style.boxShadow='var(--shadow-hover)'" onmouseout="this.style.boxShadow='none'">
+          <div style="font-size:1.8rem;margin-bottom:10px;">🏋️</div>
+          <div style="font-family:'Google Sans',sans-serif;font-size:1rem;font-weight:500;">운동 시작</div>
+          <div style="font-size:0.8rem;opacity:.85;margin-top:4px;">자세 분석 및 점수 측정</div>
+        </div>
+      </a>
+      <a href="/workout/feedback/" style="text-decoration:none;">
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:24px 20px;color:var(--text);transition:box-shadow .15s;" onmouseover="this.style.boxShadow='var(--shadow-hover)'" onmouseout="this.style.boxShadow='none'">
+          <div style="font-size:1.8rem;margin-bottom:10px;">📊</div>
+          <div style="font-family:'Google Sans',sans-serif;font-size:1rem;font-weight:500;">피드백 보기</div>
+          <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px;">운동 기록 및 점수 분석</div>
+        </div>
+      </a>
+      <a href="{% url 'register' %}" style="text-decoration:none;">
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:24px 20px;color:var(--text);transition:box-shadow .15s;" onmouseover="this.style.boxShadow='var(--shadow-hover)'" onmouseout="this.style.boxShadow='none'">
+          <div style="font-size:1.8rem;margin-bottom:10px;">➕</div>
+          <div style="font-family:'Google Sans',sans-serif;font-size:1rem;font-weight:500;">얼굴 등록</div>
+          <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px;">새 사용자 얼굴 추가</div>
+        </div>
+      </a>
+      <a href="{% url 'manage' %}" style="text-decoration:none;">
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:24px 20px;color:var(--text);transition:box-shadow .15s;" onmouseover="this.style.boxShadow='var(--shadow-hover)'" onmouseout="this.style.boxShadow='none'">
+          <div style="font-size:1.8rem;margin-bottom:10px;">⚙️</div>
+          <div style="font-family:'Google Sans',sans-serif;font-size:1rem;font-weight:500;">설정</div>
+          <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px;">앱 설정 및 사용자 관리</div>
+        </div>
+      </a>
     </div>
+
+
   </div>
 </div>
 {% endblock %}

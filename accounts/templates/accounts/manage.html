@@ -1,76 +1,111 @@
 {% extends "accounts/base.html" %}
-{% block title %}관리자 페이지{% endblock %}
+{% block title %}설정 — PoseFit{% endblock %}
 
 {% block body %}
 <div class="top-bar">
-  <span class="brand">🛠 관리자 페이지</span>
-  <div style="display:flex; gap:12px;">
-    <a href="{% url 'register' %}" class="btn btn-secondary" style="padding:8px 18px;font-size:0.9rem;">새 사용자 등록</a>
-    <a href="{% url 'login' %}" class="btn btn-secondary" style="padding:8px 18px;font-size:0.9rem;">← 돌아가기</a>
+  <span class="brand"><a href="/dashboard/" style="text-decoration:none;"><span class="fit">Pose</span><span class="face">Fit</span></a></span>
+  <div style="display:flex;gap:8px;">
+    <button class="theme-toggle" onclick="toggleTheme()">🌙 다크</button>
+    <a href="{% url 'dashboard' %}" class="btn btn-secondary" style="padding:7px 16px;font-size:0.85rem;">← 홈</a>
   </div>
 </div>
 
 <div class="page">
-  <div class="card" style="max-width:640px; margin-top:20px;">
-    <h1 style="margin-bottom:6px;">등록된 사용자 관리</h1>
-    <p class="subtitle">사용자를 삭제하면 얼굴 데이터와 모델이 즉시 갱신됩니다.</p>
+  <div style="width:100%;max-width:640px;padding:32px 16px;">
+
+    <div style="margin-bottom:28px;">
+      <h1 style="font-family:'Google Sans',sans-serif;font-size:1.5rem;font-weight:400;color:var(--text);">설정</h1>
+    </div>
+
+    <!-- 앱 설정 섹션 -->
+    <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">앱 설정</div>
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px;">
+
+      <div style="padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-size:0.9rem;font-weight:500;color:var(--text);">테마</div>
+          <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:2px;">라이트 / 다크 모드 전환</div>
+        </div>
+        <button class="theme-toggle" onclick="toggleTheme()" style="font-size:0.85rem;">🌙 다크</button>
+      </div>
+
+      <div style="padding:16px 20px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:0.9rem;font-weight:500;color:var(--text);">얼굴 등록</div>
+          <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:2px;">새 사용자 얼굴 데이터 추가</div>
+        </div>
+        <a href="{% url 'register' %}" class="btn btn-secondary" style="padding:7px 16px;font-size:0.85rem;">등록하기</a>
+      </div>
+    </div>
+
+    <!-- 관리자 섹션 -->
+    <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">관리자</div>
+
+    {% if not request.session.is_admin %}
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:24px 20px;margin-bottom:24px;">
+      <div style="font-size:0.9rem;font-weight:500;color:var(--text);margin-bottom:12px;">관리자 인증</div>
+      <form method="post">
+        {% csrf_token %}
+        {% if messages %}
+          {% for msg in messages %}
+            <div style="font-size:0.85rem;color:var(--red);margin-bottom:10px;">{{ msg }}</div>
+          {% endfor %}
+        {% endif %}
+        <input type="password" name="password" placeholder="관리자 비밀번호" style="margin-bottom:10px;">
+        <button type="submit" class="btn btn-primary">확인</button>
+      </form>
+    </div>
+    {% else %}
 
     {% if messages %}
       {% for msg in messages %}
-        <div class="status {% if msg.tags == 'error' %}err{% else %}ok{% endif %}"
-             style="margin-bottom:16px; padding:10px; border-radius:8px; background:#1e1e3a;">
+        <div style="font-size:0.85rem;padding:10px 14px;border-radius:4px;margin-bottom:14px;
+          background:{% if msg.tags == 'error' %}#FCE8E6{% else %}#E6F4EA{% endif %};
+          color:{% if msg.tags == 'error' %}var(--red){% else %}var(--green){% endif %};">
           {{ msg }}
         </div>
       {% endfor %}
     {% endif %}
 
-    {% if user_info %}
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>이름</th>
-          <th>샘플 수</th>
-          <th style="text-align:center;">삭제</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for uid, info in user_info.items %}
-        <tr>
-          <td style="color:#666;">{{ uid }}</td>
-          <td><strong style="color:#fff;">{{ info.name }}</strong></td>
-          <td style="color:#888;">{{ info.samples }}장</td>
-          <td style="text-align:center;">
-            <form method="post" action="{% url 'manage_delete' uid %}"
-                  onsubmit="return confirm('{{ info.name }}을(를) 삭제하시겠습니까?')">
-              {% csrf_token %}
-              <button type="submit" class="btn" style="
-                background:#c0392b; color:#fff;
-                padding:6px 16px; font-size:0.85rem;
-              ">삭제</button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <div style="text-align:center; padding:40px 0; color:#555;">
-      <div style="font-size:2rem; margin-bottom:12px;">👤</div>
-      <p>등록된 사용자가 없습니다.</p>
-      <a href="{% url 'register' %}" class="btn btn-primary" style="margin-top:16px; display:inline-block;">
-        첫 번째 사용자 등록하기
-      </a>
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px;">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:'Google Sans',sans-serif;font-size:0.95rem;font-weight:500;">등록된 사용자</span>
+        <span style="font-size:0.8rem;color:var(--text-secondary);">총 {{ user_info|length }}명</span>
+      </div>
+
+      {% if user_info %}
+      <table style="margin-top:0;">
+        <thead>
+          <tr><th>ID</th><th>이름</th><th>샘플 수</th><th style="text-align:center;">삭제</th></tr>
+        </thead>
+        <tbody>
+          {% for uid, info in user_info.items %}
+          <tr>
+            <td style="color:var(--text-secondary);">{{ uid }}</td>
+            <td style="font-weight:500;">{{ info.name }}</td>
+            <td style="color:var(--text-secondary);">{{ info.samples }}장</td>
+            <td style="text-align:center;">
+              <form method="post" action="{% url 'manage_delete' uid %}"
+                    onsubmit="return confirm('{{ info.name }}을(를) 삭제하시겠습니까?')">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="background:#FCE8E6;color:var(--red);border:1px solid #F5C6C3;padding:5px 14px;font-size:0.8rem;border-radius:4px;">삭제</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div style="padding:32px;text-align:center;color:var(--text-secondary);font-size:0.9rem;">등록된 사용자가 없습니다.</div>
+      {% endif %}
+    </div>
+
+    <div style="padding:12px 16px;background:var(--white);border:1px solid var(--border);border-radius:8px;font-size:0.8rem;color:var(--text-secondary);">
+      관리자 비밀번호: <code style="color:var(--blue);background:#E8F0FE;padding:2px 6px;border-radius:3px;">admin1234</code>
+      &nbsp;·&nbsp; settings.py에서 변경 가능
     </div>
     {% endif %}
 
-    <div style="margin-top:28px; padding-top:20px; border-top:1px solid #2a2a4a;">
-      <p style="color:#555; font-size:0.85rem;">
-        총 <strong style="color:#aaa;">{{ user_info|length }}명</strong> 등록됨 &nbsp;·&nbsp;
-        관리자 비밀번호: <code style="color:#6c63ff;">admin1234</code>
-        (settings에서 변경 가능)
-      </p>
-    </div>
   </div>
 </div>
 {% endblock %}
