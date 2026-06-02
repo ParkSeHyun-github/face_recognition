@@ -1,0 +1,139 @@
+{% extends "accounts/base.html" %}
+{% block title %}얼굴 등록{% endblock %}
+
+{% block body %}
+<div class="card">
+  <h1>얼굴 등록</h1>
+  <p class="subtitle">이름을 입력하고 카메라로 얼굴을 등록하세요.</p>
+
+  <div id="step1">
+    <input type="text" id="username" placeholder="이름 입력" maxlength="30">
+    <button class="btn btn-primary" id="startBtn" onclick="startRegister()">등록 시작</button>
+  </div>
+
+  <div id="step2" style="display:none; margin-top:20px;">
+    <div class="video-wrap">
+      <video id="video" autoplay playsinline muted></video>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="regBar" style="width:0%"></div>
+    </div>
+    <div class="status" id="status">카메라 준비 중...</div>
+  </div>
+
+  <div id="step3" class="success-box" style="display:none">
+    <div class="icon">🎉</div>
+    <h2>등록 완료!</h2>
+    <p style="color:#888; margin-bottom:20px;">이제 얼굴로 로그인할 수 있습니다.</p>
+    <a href="{% url 'login' %}" class="btn btn-primary">로그인하러 가기</a>
+  </div>
+
+  <div class="nav-links" style="margin-top:16px;">
+    이미 등록했나요? <a href="{% url 'login' %}">로그인</a>
+  </div>
+</div>
+
+<script>
+const SAMPLES_NEEDED = {{ samples_needed }};
+let running = false;
+let count = 0;
+
+// 전송용 캔버스를 절반 해상도로 고정 (데이터 크기 절감)
+const sendCanvas = document.createElement('canvas');
+sendCanvas.width = 320;
+sendCanvas.height = 240;
+const sendCtx = sendCanvas.getContext('2d');
+
+async function startRegister() {
+  const username = document.getElementById('username').value.trim();
+  if (!username) { alert('이름을 입력하세요.'); return; }
+
+  document.getElementById('startBtn').disabled = true;
+
+  const res = await fetch("{% url 'api_register_start' %}", {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+    body: JSON.stringify({ username }),
+  });
+  const data = await res.json();
+  if (!data.ok) { alert(data.error); document.getElementById('startBtn').disabled = false; return; }
+
+  document.getElementById('step1').style.display = 'none';
+  document.getElementById('step2').style.display = 'block';
+
+  const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } }).catch(() => null);
+  if (!stream) {
+    document.getElementById('status').textContent = '카메라 접근 권한이 필요합니다.';
+    document.getElementById('status').className = 'status err';
+    return;
+  }
+  const video = document.getElementById('video');
+  video.srcObject = stream;
+  video.addEventListener('loadedmetadata', () => {
+    document.getElementById('status').textContent = '얼굴을 카메라에 보여주세요.';
+    running = true;
+    loop(video);
+  });
+}
+
+// 응답을 기다린 후 다음 프레임 전송 (요청 쌓임 방지)
+async function loop(video) {
+  if (!running) return;
+
+  sendCtx.drawImage(video, 0, 0, 320, 240);
+  const image = sendCanvas.toDataURL('image/jpeg', 0.6);
+
+  try {
+    const res = await fetch("{% url 'api_register_frame' %}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify({ image }),
+    });
+    const data = await res.json();
+
+    if (!data.ok) {
+      document.getElementById('status').textContent = data.error;
+      document.getElementById('status').className = 'status err';
+    } else {
+      count = data.count;
+      const pct = Math.min(100, (count / SAMPLES_NEEDED) * 100);
+      document.getElementById('regBar').style.width = pct + '%';
+
+      if (data.warning) {
+        document.getElementById('status').textContent = data.warning;
+        document.getElementById('status').className = 'status warn';
+      } else {
+        document.getElementById('status').textContent = `수집 중: ${count} / ${SAMPLES_NEEDED}`;
+        document.getElementById('status').className = 'status ok';
+      }
+
+      if (data.done) {
+        running = false;
+        await finish();
+        return;
+      }
+    }
+  } catch(e) {}
+
+  // 응답 완료 후 즉시 다음 요청 (딜레이 없음)
+  loop(video);
+}
+
+async function finish() {
+  document.getElementById('status').textContent = '모델 학습 중...';
+  const res = await fetch("{% url 'api_register_finish' %}", {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+    body: JSON.stringify({}),
+  });
+  const data = await res.json();
+  document.getElementById('step2').style.display = 'none';
+  document.getElementById('step3').style.display = 'block';
+}
+
+function getCookie(name) {
+  const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+  return v ? v[2] : null;
+}
+</script>
+{% endblock %}

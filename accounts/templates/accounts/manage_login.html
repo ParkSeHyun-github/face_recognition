@@ -1,0 +1,29 @@
+{% extends "accounts/base.html" %}
+{% block title %}관리자 로그인{% endblock %}
+
+{% block body %}
+<div class="card">
+  <h1>관리자 페이지</h1>
+  <p class="subtitle">관리자 비밀번호를 입력하세요.</p>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="status err" style="margin-bottom:12px;">{{ msg }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <input type="password" name="password" placeholder="비밀번호" style="
+      width:100%; padding:12px 16px; border-radius:8px;
+      border:1px solid #3a3a5a; background:#12122a;
+      color:#fff; font-size:1rem; margin-bottom:16px;
+    ">
+    <button type="submit" class="btn btn-primary">로그인</button>
+  </form>
+
+  <div class="nav-links">
+    <a href="{% url 'login' %}">← 돌아가기</a>
+  </div>
+</div>
+{% endblock %}

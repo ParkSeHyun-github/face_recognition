@@ -1,0 +1,46 @@
+{% extends "accounts/base.html" %}
+{% block title %}대시보드{% endblock %}
+
+{% block body %}
+<div class="top-bar">
+  <span class="brand">👤 얼굴 인식 로그인</span>
+  <a href="{% url 'logout' %}" class="btn btn-secondary" style="padding:8px 18px;font-size:0.9rem;">로그아웃</a>
+</div>
+
+<div class="page">
+  <div class="card" style="max-width:600px; margin-top:20px;">
+    <div class="success-box" style="padding:20px 0 28px;">
+      <div class="icon">✅</div>
+      <h2 style="color:#4caf50; margin-bottom:6px;">로그인 성공</h2>
+      <p style="color:#aaa;">환영합니다, <strong style="color:#fff;">{{ username }}</strong>님!</p>
+    </div>
+
+    <hr style="border-color:#2a2a4a; margin-bottom:24px;">
+
+    <h2 style="font-size:1rem; color:#888; margin-bottom:8px;">등록된 사용자 목록</h2>
+    {% if users %}
+    <table>
+      <thead>
+        <tr><th>ID</th><th>이름</th></tr>
+      </thead>
+      <tbody>
+        {% for uid, name in users.items %}
+        <tr>
+          <td style="color:#666;">{{ uid }}</td>
+          <td>{{ name }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:#555; font-size:0.9rem;">등록된 사용자가 없습니다.</p>
+    {% endif %}
+
+    <div style="margin-top:24px; display:flex; gap:12px; flex-wrap:wrap;">
+      <a href="{% url 'register' %}" class="btn btn-primary" style="flex:1; text-align:center;">새 얼굴 등록</a>
+      <a href="{% url 'manage' %}" class="btn btn-secondary" style="flex:1; text-align:center;">관리자 페이지</a>
+      <a href="{% url 'logout' %}" class="btn btn-secondary" style="flex:1; text-align:center;">로그아웃</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
