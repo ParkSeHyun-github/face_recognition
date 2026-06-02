@@ -1,4 +1,3 @@
-"""Rebuild the recognition model from saved face images."""
 import os
 import cv2
 import numpy as np
@@ -9,11 +8,10 @@ FACES_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "faces")
 
 
 def collect_samples():
-    """Load all stored face images and return (faces, labels) lists."""
     faces, labels = [], []
     if not os.path.exists(FACES_DIR):
         return faces, labels
-    for fname in os.listdir(FACES_DIR):
+    for fname in sorted(os.listdir(FACES_DIR)):
         if not fname.endswith(".png"):
             continue
         user_id = int(fname.split("_")[0])
@@ -25,7 +23,6 @@ def collect_samples():
 
 
 def retrain():
-    """Retrain the LBPH model using all stored samples. Returns sample count."""
     faces, labels = collect_samples()
     if not faces:
         return 0
