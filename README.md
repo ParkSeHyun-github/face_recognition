@@ -7,13 +7,3 @@
 
 ADMIN_PASSWORD = 'admin1234'  # 이 부분 수정
 
-
-항목	변경 전	변경 후
-얼굴 탐지	Haar Cascade (오탐 많음)	
-DNN (Caffe SSD) - 딥러닝 기반, 훨씬 정확
-전처리	
-equalizeHist	
-CLAHE - 조명 변화에 강함
-학습 증강	3가지 밝기 
-변형	4가지 밝기 + 좌우 반전 추가
-임계값	52~58	68 - 적절히 여유 있게
