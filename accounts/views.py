@@ -4,12 +4,11 @@ import os
 import numpy as np
 import cv2
 
-from django.shortcuts import render, redirect
 from django.http import JsonResponse
-from django.views.decorators.http import require_POST, require_http_methods
+from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import ensure_csrf_cookie
-from django.contrib import messages
 from django.conf import settings
+from django.middleware.csrf import get_token
 
 from face_auth.detector import FaceDetector
 from face_auth.recognizer import FaceRecognizer
@@ -30,94 +29,7 @@ def _decode_frame(data_url: str):
     return cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
 
-# ── 페이지 뷰 ──────────────────────────────────────────────
-
-def home(request):
-    if request.session.get('user_id'):
-        return redirect('dashboard')
-    return redirect('login')
-
-
-def dashboard(request):
-    user_id = request.session.get('user_id')
-    if not user_id:
-        return redirect('login')
-    username = database.get_username(user_id) or '알 수 없음'
-    users = database.list_users()
-    return render(request, 'accounts/dashboard.html', {
-        'username': username,
-        'users': users,
-    })
-
-
-@ensure_csrf_cookie
-def register_page(request):
-    return render(request, 'accounts/register.html', {
-        'samples_needed': SAMPLES_NEEDED,
-    })
-
-
-@ensure_csrf_cookie
-def login_page(request):
-    if request.session.get('user_id'):
-        return redirect('dashboard')
-    return render(request, 'accounts/login.html')
-
-
-def logout_view(request):
-    request.session.flush()
-    return redirect('login')
-
-
-# ── 관리자 페이지 ──────────────────────────────────────────
-
 ADMIN_PASSWORD = 'admin1234'  # 실제 서비스에서는 환경변수로 관리
-
-
-def manage_page(request):
-    user_id = request.session.get('user_id')
-    if not user_id:
-        return redirect('login')
-
-    # 관리자 비밀번호 처리
-    if request.method == 'POST':
-        pw = request.POST.get('password', '')
-        if pw == ADMIN_PASSWORD:
-            request.session['is_admin'] = True
-        else:
-            messages.error(request, '비밀번호가 틀렸습니다.')
-
-    # 관리자 인증된 경우에만 유저 목록 조회
-    user_info = {}
-    if request.session.get('is_admin'):
-        users = database.list_users()
-        for uid, name in users.items():
-            count = len([f for f in FACES_DIR.glob(f"{uid}_*.png")]) if FACES_DIR.exists() else 0
-            user_info[uid] = {'name': name, 'samples': count}
-
-    return render(request, 'accounts/manage.html', {'user_info': user_info})
-
-
-@require_POST
-def manage_delete(request, user_id):
-    if not request.session.get('is_admin'):
-        return redirect('manage')
-
-    name = database.get_username(user_id)
-    if name:
-        database.delete_user(user_id)
-        if FACES_DIR.exists():
-            for f in FACES_DIR.glob(f"{user_id}_*.png"):
-                f.unlink()
-        trainer.retrain()
-        global recognizer
-        recognizer = FaceRecognizer()
-        messages.success(request, f"'{name}' 사용자가 삭제되었습니다.")
-    else:
-        messages.error(request, '존재하지 않는 사용자입니다.')
-
-    return redirect('manage')
-
 
 # ── API 뷰 ────────────────────────────────────────────────
 
@@ -190,6 +102,85 @@ def api_register_finish(request):
     request.session.pop('reg_username', None)
     request.session.pop('reg_count', None)
     return JsonResponse({'ok': True, 'samples': n})
+
+
+@ensure_csrf_cookie
+def api_csrf(request):
+    """CSRF 토큰 발급 — React 앱 진입 시 호출"""
+    return JsonResponse({'ok': True, 'csrfToken': get_token(request)})
+
+
+def api_me(request):
+    """현재 로그인 상태 반환"""
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'ok': False, 'authenticated': False})
+    username = request.session.get('username', '')
+    return JsonResponse({'ok': True, 'authenticated': True,
+                         'user_id': user_id, 'username': username})
+
+
+def api_logout(request):
+    """로그아웃"""
+    request.session.flush()
+    return JsonResponse({'ok': True})
+
+
+def api_dashboard(request):
+    """대시보드 데이터"""
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'ok': False, 'error': '로그인이 필요합니다.'}, status=401)
+    username = database.get_username(user_id) or '알 수 없음'
+    users = database.list_users()
+    return JsonResponse({'ok': True, 'username': username,
+                         'total_users': len(users)})
+
+
+def api_manage(request):
+    """관리자 — 유저 목록 (GET) / 비밀번호 인증 (POST)"""
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'ok': False, 'error': '로그인이 필요합니다.'}, status=401)
+
+    if request.method == 'POST':
+        import json as _json
+        data = _json.loads(request.body)
+        pw = data.get('password', '')
+        if pw == ADMIN_PASSWORD:
+            request.session['is_admin'] = True
+            return JsonResponse({'ok': True, 'authenticated': True})
+        return JsonResponse({'ok': False, 'error': '비밀번호가 틀렸습니다.'})
+
+    if not request.session.get('is_admin'):
+        return JsonResponse({'ok': True, 'authenticated': False, 'users': []})
+
+    users = database.list_users()
+    user_info = []
+    for uid, name in users.items():
+        count = len([f for f in FACES_DIR.glob(f"{uid}_*.png")]) if FACES_DIR.exists() else 0
+        user_info.append({'id': uid, 'name': name, 'samples': count})
+    return JsonResponse({'ok': True, 'authenticated': True, 'users': user_info})
+
+
+@require_POST
+def api_manage_delete(request, user_id):
+    """관리자 — 유저 삭제"""
+    if not request.session.get('is_admin'):
+        return JsonResponse({'ok': False, 'error': '관리자 권한이 필요합니다.'}, status=403)
+
+    name = database.get_username(user_id)
+    if not name:
+        return JsonResponse({'ok': False, 'error': '존재하지 않는 사용자입니다.'})
+
+    database.delete_user(user_id)
+    if FACES_DIR.exists():
+        for f in FACES_DIR.glob(f"{user_id}_*.png"):
+            f.unlink()
+    trainer.retrain()
+    global recognizer
+    recognizer = FaceRecognizer()
+    return JsonResponse({'ok': True, 'deleted': name})
 
 
 @require_POST

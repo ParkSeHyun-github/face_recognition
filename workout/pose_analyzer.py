@@ -147,6 +147,106 @@ def calculate_score(angles, exercise):
     return round(sum(scores) / len(scores), 1) if scores else 0.0
 
 
+# 관절 이름 → 한국어
+_ANGLE_LABELS = {
+    'knee_angle': '무릎',
+    'hip_angle': '엉덩이·허리',
+    'front_knee_angle': '앞 무릎',
+    'back_knee_angle': '뒷 무릎',
+    'elbow_angle': '팔꿈치',
+    'shoulder_angle': '어깨',
+}
+
+# 운동·관절별 방향 피드백 (angle < min → too_low, angle > max → too_high)
+_JOINT_FEEDBACK = {
+    'squat': {
+        'knee_angle': {
+            'too_high': '무릎을 더 굽혀 주세요. 엉덩이가 무릎 높이 아래로 내려와야 합니다.',
+            'too_low':  '무릎이 너무 많이 굽혀졌습니다. 무릎이 발끝을 너무 많이 넘기지 않도록 하세요.',
+            'ok':       '무릎 각도가 좋습니다.',
+        },
+        'hip_angle': {
+            'too_high': '엉덩이를 더 낮춰 주세요. 상체가 앞으로 더 숙여져야 합니다.',
+            'too_low':  '상체를 좀 더 세워 주세요. 허리가 너무 굽어있습니다.',
+            'ok':       '허리·엉덩이 각도가 좋습니다.',
+        },
+    },
+    'lunge': {
+        'front_knee_angle': {
+            'too_high': '앞 무릎을 더 굽혀 주세요. 무릎이 발목 위에 오도록 내려가야 합니다.',
+            'too_low':  '앞 무릎이 너무 굽혀졌습니다. 무릎이 발끝을 너무 넘어가지 않도록 하세요.',
+            'ok':       '앞 무릎 각도가 좋습니다.',
+        },
+        'back_knee_angle': {
+            'too_high': '뒷 무릎을 바닥 가까이 더 낮춰 주세요.',
+            'too_low':  '뒷 무릎이 너무 굽혀졌습니다. 조금 덜 내려가도 됩니다.',
+            'ok':       '뒷 무릎 각도가 좋습니다.',
+        },
+    },
+    'plank': {
+        'hip_angle': {
+            'too_high': '엉덩이가 너무 올라갔습니다. 몸을 일직선으로 유지해 주세요.',
+            'too_low':  '엉덩이가 처져 있습니다. 복부에 힘을 주고 엉덩이를 올려 주세요.',
+            'ok':       '몸이 잘 일직선으로 유지되고 있습니다.',
+        },
+        'elbow_angle': {
+            'too_high': '팔꿈치를 90°에 가깝게 굽혀 주세요.',
+            'too_low':  '팔꿈치 각도가 너무 좁습니다. 손목이 팔꿈치 바로 아래에 오도록 하세요.',
+            'ok':       '팔꿈치 각도가 좋습니다.',
+        },
+    },
+    'overhead_press': {
+        'elbow_angle': {
+            'too_high': '팔꿈치 각도가 너무 큽니다.',
+            'too_low':  '팔을 더 완전히 펴 주세요. 정점에서 팔이 곧게 펴져야 합니다.',
+            'ok':       '팔 펴는 동작이 좋습니다.',
+        },
+        'shoulder_angle': {
+            'too_high': '어깨 각도가 너무 큽니다.',
+            'too_low':  '팔을 더 높이 올려 주세요. 팔이 귀 옆까지 올라와야 합니다.',
+            'ok':       '어깨 올리는 동작이 좋습니다.',
+        },
+    },
+}
+
+
+def get_angle_feedback(angles, exercise):
+    """각도별 구체적인 피드백 리스트 반환.
+    반환값: [{'joint': '무릎', 'angle': 85.2, 'target': '70~100°', 'message': '...', 'status': 'ok'|'high'|'low'}, ...]
+    """
+    standard = STANDARDS.get(exercise, {})
+    joint_fb = _JOINT_FEEDBACK.get(exercise, {})
+    feedbacks = []
+
+    for key, value in angles.items():
+        if key not in standard:
+            continue
+        min_val = standard[key]['min']
+        max_val = standard[key]['max']
+        label = _ANGLE_LABELS.get(key, key)
+        target_str = f'{min_val}~{max_val}°'
+
+        if value > max_val:
+            status = 'high'
+            msg = joint_fb.get(key, {}).get('too_high', f'{label} 각도를 줄여 주세요.')
+        elif value < min_val:
+            status = 'low'
+            msg = joint_fb.get(key, {}).get('too_low', f'{label} 각도를 늘려 주세요.')
+        else:
+            status = 'ok'
+            msg = joint_fb.get(key, {}).get('ok', f'{label} 각도가 좋습니다.')
+
+        feedbacks.append({
+            'joint': label,
+            'angle': round(value, 1),
+            'target': target_str,
+            'message': msg,
+            'status': status,
+        })
+
+    return feedbacks
+
+
 class RepTracker:
     """1회 동작(rep) 단계 추적 및 점수 산출"""
 
@@ -156,7 +256,8 @@ class RepTracker:
         self.bottom_angles = None
         self.rep_count = 0
         self.last_score = None
-        self.all_rep_scores = []  # 세트 내 모든 rep 점수
+        self.all_rep_scores = []    # 세트 내 모든 rep 점수
+        self.all_rep_feedbacks = [] # 세트 내 모든 rep 관절 피드백
 
     @property
     def set_avg_score(self):
@@ -170,6 +271,7 @@ class RepTracker:
         stage = detect_stage(angles, self.exercise)
 
         completed_score = None
+        completed_feedback = None
 
         if self.stage == 'STANDING' and stage in ('GOING_DOWN', 'BOTTOM'):
             self.stage = 'GOING_DOWN'
@@ -184,10 +286,12 @@ class RepTracker:
         elif self.stage == 'GOING_UP' and stage == 'STANDING':
             if self.bottom_angles:
                 completed_score = calculate_score(self.bottom_angles, self.exercise)
+                completed_feedback = get_angle_feedback(self.bottom_angles, self.exercise)
                 self.last_score = completed_score
                 self.all_rep_scores.append(completed_score)
+                self.all_rep_feedbacks.append(completed_feedback)
                 self.rep_count += 1
             self.stage = 'STANDING'
             self.bottom_angles = None
 
-        return angles, self.stage, completed_score
+        return angles, self.stage, completed_score, completed_feedback

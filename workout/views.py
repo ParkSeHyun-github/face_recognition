@@ -5,10 +5,8 @@ import numpy as np
 import cv2
 import mediapipe as mp
 
-from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import ensure_csrf_cookie
 from django.conf import settings
 
 from .models import WorkoutSession, RepClip
@@ -26,82 +24,6 @@ def _decode_frame(data_url: str):
     img_bytes = base64.b64decode(encoded)
     arr = np.frombuffer(img_bytes, dtype=np.uint8)
     return cv2.imdecode(arr, cv2.IMREAD_COLOR)
-
-
-# ── 페이지 뷰 ──────────────────────────────────────────────
-
-@ensure_csrf_cookie
-def workout_page(request):
-    user_id = request.session.get('user_id')
-    if not user_id:
-        return redirect('login')
-    return render(request, 'workout/workout.html', {
-        'username': request.session.get('username', ''),
-        'exercises': [
-            ('squat', '스쿼트'),
-            ('lunge', '런지'),
-            ('plank', '플랭크'),
-            ('overhead_press', '오버헤드 프레스'),
-        ],
-    })
-
-
-def feedback_page(request):
-    user_id = request.session.get('user_id')
-    if not user_id:
-        return redirect('login')
-
-    from collections import defaultdict
-
-    username = request.session.get('username', '')
-    sessions = WorkoutSession.objects.filter(user_name=username).order_by('created_at')
-
-    # 날짜 필터
-    filter_date = request.GET.get('date', '')
-    filter_exercise = request.GET.get('exercise', '')
-    filtered = sessions
-    if filter_date:
-        filtered = filtered.filter(created_at__date=filter_date)
-    if filter_exercise:
-        filtered = filtered.filter(exercise=filter_exercise)
-
-    # 운동별 일별 평균 차트
-    exercises = ['squat', 'lunge', 'plank', 'overhead_press']
-    chart_data = {}
-    for ex in exercises:
-        records = sessions.filter(exercise=ex)
-        daily = defaultdict(list)
-        for r in records:
-            day = r.created_at.strftime('%Y-%m-%d')
-            daily[day].append(r.score)
-        chart_data[ex] = {
-            'labels': list(daily.keys()),
-            'scores': [round(sum(v) / len(v), 1) for v in daily.values()],
-        }
-
-    # 세트 내 rep 점수 차트 (rep 데이터 있는 세션만)
-    rep_chart = []
-    for s in filtered.order_by('created_at'):
-        if s.rep_scores:
-            rep_chart.append({
-                'label': f"{s.get_exercise_display()} {s.set_number}세트 ({s.created_at.strftime('%m/%d')})",
-                'scores': s.rep_scores,
-            })
-
-    # 날짜 목록 (필터용)
-    date_list = sessions.dates('created_at', 'day', order='DESC')
-
-    return render(request, 'workout/feedback.html', {
-        'username': username,
-        'sessions': filtered.order_by('-created_at'),
-        'chart_data': json.dumps(chart_data, ensure_ascii=False),
-        'rep_chart': json.dumps(rep_chart, ensure_ascii=False),
-        'date_list': [d.strftime('%Y-%m-%d') for d in date_list],
-        'filter_date': filter_date,
-        'filter_exercise': filter_exercise,
-        'exercise_choices': [('', '전체 운동'), ('squat', '스쿼트'), ('lunge', '런지'),
-                             ('plank', '플랭크'), ('overhead_press', '오버헤드 프레스')],
-    })
 
 
 # ── API 뷰 ────────────────────────────────────────────────
@@ -143,7 +65,12 @@ def api_workout_frame(request):
         return JsonResponse({'ok': True, 'detected': False})
 
     tracker = _trackers[user_id]
-    angles, stage, score = tracker.update(results.pose_landmarks.landmark)
+    angles, stage, score, feedback = tracker.update(results.pose_landmarks.landmark)
+
+    landmarks = [
+        {'x': round(lm.x, 4), 'y': round(lm.y, 4), 'visibility': round(lm.visibility, 2)}
+        for lm in results.pose_landmarks.landmark
+    ]
 
     response = {
         'ok': True,
@@ -152,11 +79,14 @@ def api_workout_frame(request):
         'rep_count': tracker.rep_count,
         'angles': {k: round(v, 1) for k, v in angles.items()},
         'score': None,
+        'feedback': None,
+        'landmarks': landmarks,
     }
 
     if score is not None:
         response['score'] = score
         response['last_score'] = score
+        response['feedback'] = feedback
 
     return JsonResponse(response)
 
@@ -191,17 +121,89 @@ def api_workout_finish(request):
     return JsonResponse({'ok': True, 'saved_score': score})
 
 
-def clips_page(request):
-    """클립 목록 페이지"""
+def api_feedback(request):
+    """피드백 데이터 JSON API"""
     user_id = request.session.get('user_id')
     if not user_id:
-        return redirect('login')
+        return JsonResponse({'ok': False, 'error': '로그인이 필요합니다.'}, status=401)
+
+    from collections import defaultdict
+    username = request.session.get('username', '')
+    sessions = WorkoutSession.objects.filter(user_name=username).order_by('created_at')
+
+    filter_date = request.GET.get('date', '')
+    filter_exercise = request.GET.get('exercise', '')
+    filtered = sessions
+    if filter_date:
+        filtered = filtered.filter(created_at__date=filter_date)
+    if filter_exercise:
+        filtered = filtered.filter(exercise=filter_exercise)
+
+    exercises = ['squat', 'lunge', 'plank', 'overhead_press']
+    chart_data = {}
+    for ex in exercises:
+        records = sessions.filter(exercise=ex)
+        daily = defaultdict(list)
+        for r in records:
+            day = r.created_at.strftime('%Y-%m-%d')
+            daily[day].append(r.score)
+        chart_data[ex] = {
+            'labels': list(daily.keys()),
+            'scores': [round(sum(v) / len(v), 1) for v in daily.values()],
+        }
+
+    rep_chart = []
+    for s in filtered.order_by('created_at'):
+        if s.rep_scores:
+            rep_chart.append({
+                'label': f"{s.get_exercise_display()} {s.set_number}세트 ({s.created_at.strftime('%m/%d')})",
+                'scores': s.rep_scores,
+            })
+
+    sessions_data = []
+    for s in filtered.order_by('-created_at'):
+        sessions_data.append({
+            'id': s.id,
+            'exercise': s.exercise,
+            'exercise_display': s.get_exercise_display(),
+            'set_number': s.set_number,
+            'score': s.score,
+            'rep_scores': s.rep_scores,
+            'created_at': s.created_at.strftime('%Y-%m-%d %H:%M'),
+        })
+
+    date_list = [d.strftime('%Y-%m-%d') for d in sessions.dates('created_at', 'day', order='DESC')]
+
+    return JsonResponse({
+        'ok': True,
+        'username': username,
+        'sessions': sessions_data,
+        'chart_data': chart_data,
+        'rep_chart': rep_chart,
+        'date_list': date_list,
+    })
+
+
+def api_clips(request):
+    """클립 목록 JSON API"""
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'ok': False, 'error': '로그인이 필요합니다.'}, status=401)
     username = request.session.get('username', '')
     clips = RepClip.objects.filter(user_name=username).order_by('-created_at')
-    return render(request, 'workout/clips.html', {
-        'username': username,
-        'clips': clips,
-    })
+    clips_data = []
+    for c in clips:
+        clips_data.append({
+            'id': c.id,
+            'exercise': c.exercise,
+            'exercise_display': dict(RepClip.EXERCISE_CHOICES).get(c.exercise, c.exercise),
+            'rep_number': c.rep_number,
+            'score': c.score,
+            'video_url': c.video_file.url if c.video_file else None,
+            'created_at': c.created_at.strftime('%Y-%m-%d %H:%M'),
+        })
+    return JsonResponse({'ok': True, 'clips': clips_data})
+
 
 
 @require_POST
