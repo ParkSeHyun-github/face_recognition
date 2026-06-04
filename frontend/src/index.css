@@ -1,0 +1,56 @@
+:root {
+  --blue: #4285F4; --blue-dark: #3367D6;
+  --red: #EA4335; --green: #34A853; --yellow: #FBBC04;
+  --text: #202124; --text-secondary: #5F6368;
+  --border: #DADCE0; --bg: #F8F9FA; --white: #FFFFFF;
+  --shadow: 0 1px 3px rgba(60,64,67,.15), 0 4px 8px rgba(60,64,67,.10);
+}
+[data-theme="dark"] {
+  --text: #E8EAED; --text-secondary: #9AA0A6;
+  --border: #3C4043; --bg: #202124; --white: #292A2D;
+}
+
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+#root { min-height: 100vh; }
+
+a { color: inherit; text-decoration: none; }
+
+button { font-family: inherit; cursor: pointer; }
+
+.btn-text {
+  background: none; border: none; color: var(--blue);
+  font-size: 0.875rem; font-weight: 500;
+  padding: 8px 12px; border-radius: 4px; cursor: pointer;
+}
+.btn-text:hover { background: #F6FAFE; }
+
+.btn-contained {
+  background: var(--blue); color: #fff; border: none;
+  font-size: 0.875rem; font-weight: 500;
+  padding: 8px 20px; border-radius: 4px; cursor: pointer;
+}
+.btn-contained:hover { background: var(--blue-dark); }
+.btn-contained:disabled { opacity: 0.6; cursor: default; }
+
+.btn-outlined {
+  background: transparent; color: var(--blue);
+  border: 1px solid var(--border); font-size: 0.875rem;
+  font-weight: 500; padding: 8px 20px; border-radius: 4px; cursor: pointer;
+}
+.btn-outlined:hover { background: #F6FAFE; }
+
+.btn-danger {
+  background: var(--red); color: #fff; border: none;
+  font-size: 0.875rem; font-weight: 500;
+  padding: 8px 20px; border-radius: 4px; cursor: pointer;
+}
+.btn-danger:hover { background: #C62828; }

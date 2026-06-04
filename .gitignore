@@ -1,9 +1,17 @@
-venv/
-__pycache__/
-*.pyc
-*.pyo
-db.sqlite3
-data/faces/
-data/models/
+# Python
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/db.sqlite3
+backend/data/faces/
+backend/data/models/
+backend/media/
 *.yml
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# OS
 .DS_Store

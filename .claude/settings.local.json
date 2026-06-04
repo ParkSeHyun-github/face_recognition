@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ' *)",
+      "Bash(npm create *)",
+      "Bash(which node *)",
+      "Read(//Users/parksehyun/.nvm/**)",
+      "Read(//Users/parksehyun/**)",
+      "Bash(command -v node npm yarn bun pnpm)",
+      "Bash(brew install *)",
+      "Bash(/opt/homebrew/bin/npm install *)",
+      "Bash(/opt/homebrew/bin/npm run *)",
+      "Bash(/Users/parksehyun/001_opencv/backend/venv/bin/pip install *)",
+      "Bash(/Users/parksehyun/001_opencv/backend/venv/bin/python3.11 --version)",
+      "Bash(python3.11 --version)",
+      "Bash(/opt/homebrew/bin/python3.11 --version)",
+      "Bash(/Users/parksehyun/001_opencv/backend/venv/bin/pip list *)",
+      "Bash(/opt/homebrew/bin/pip3 list *)",
+      "Bash(python3.11 -m pip freeze)",
+      "Bash(/opt/homebrew/bin/python3.11 -m venv venv --clear)",
+      "Bash(venv/bin/pip install *)",
+      "Bash(venv/bin/pip freeze *)",
+      "Bash(venv/bin/pip show *)",
+      "Bash(venv/bin/python -c \"import mediapipe as mp; _ = mp.solutions.pose; print\\('OK'\\)\")",
+      "Bash(venv/bin/python manage.py runserver --noreload)",
+      "Bash(curl -s http://127.0.0.1:8000/api/csrf/)",
+      "Bash(kill %1)"
+    ]
+  }
+}
