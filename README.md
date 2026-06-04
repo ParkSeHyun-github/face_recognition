@@ -33,12 +33,17 @@ PoseFit/
 
 ## 실행 방법
 
-### 한 번에 실행
+### Docker (권장)
+```bash
+docker-compose up --build
+```
+
+### 로컬 — 한 번에 실행
 ```bash
 ./start.sh
 ```
 
-### 개별 실행
+### 로컬 — 개별 실행
 ```bash
 # 백엔드 (터미널 1)
 cd backend
