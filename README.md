@@ -63,7 +63,7 @@ npm run dev
 # 백엔드 패키지 설치
 cd backend
 python3.11 -m venv venv
-source venv/bin/activate
+source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python manage.py migrate
 
@@ -71,6 +71,52 @@ python manage.py migrate
 cd frontend
 npm install
 ```
+
+## 얼굴 인식 단독 데모 (face_auth_demo.py)
+
+Django / React 없이 웹캠만으로 얼굴 등록·인식을 바로 확인할 수 있는 독립 스크립트입니다.
+
+### 설치 (최초 1회)
+
+```bash
+cd backend
+
+# venv 생성
+python -m venv venv
+
+# venv 활성화
+# macOS/Linux
+source venv/bin/activate
+# Windows
+venv\Scripts\activate
+
+# 데모에 필요한 패키지만 설치 (mediapipe 불필요)
+pip install opencv-python opencv-contrib-python numpy
+```
+
+### 실행
+
+```bash
+python face_auth_demo.py
+```
+
+### 화면 안내
+
+| 상태 | 박스 색상 | 표시 내용 |
+|------|-----------|-----------|
+| 얼굴 없음 | — | "얼굴 인식 중..." |
+| 미등록 얼굴 | 노란색 | confidence 값 |
+| 인식 성공 | 초록색 | 이름 + confidence |
+| 얼굴 2개 이상 | 빨간색 | 경고 문구 |
+
+### 키 조작
+
+| 키 | 동작 |
+|----|------|
+| `r` | 얼굴 등록 (터미널에서 이름 입력 → 샘플 40장 자동 수집 → 모델 재학습) |
+| `q` / `ESC` | 종료 |
+
+> 기존 웹 앱에서 등록한 얼굴(`data/faces/`, `data/models/lbph_model.yml`)을 그대로 사용하므로 웹에서 등록한 사용자를 바로 인식 테스트할 수 있습니다.
 
 ## 관리자
 

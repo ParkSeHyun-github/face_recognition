@@ -8,13 +8,13 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "users.json")
 def _load():
     if not os.path.exists(DB_PATH):
         return {}
-    with open(DB_PATH, "r") as f:
+    with open(DB_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def _save(db):
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    with open(DB_PATH, "w") as f:
+    with open(DB_PATH, "w", encoding="utf-8") as f:
         json.dump(db, f, indent=2, ensure_ascii=False)
 
 
